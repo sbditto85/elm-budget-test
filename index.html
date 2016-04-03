@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Elm Budget</title>
+        <script type="text/javascript" src="elm.js"></script>
+    </head>
+    <body>
+        <h1>Buget made using Elm</h1>
+        <div id="budget"></div>
+        <script type="text/javascript">
+         window.onload = function() {
+             // get an empty <div>
+             var div = document.getElementById('budget');
+
+             // embed our Elm program in that <div>
+             Elm.embed(Elm.Main, div);
+         };
+         </script>
+    </body>
+</html>
