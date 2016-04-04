@@ -10,7 +10,7 @@ import Effects exposing (Effects, Never)
 app : StartApp.App Model
 app =
   StartApp.start
-    { init = init "Group"
+    { init = init "Group" 1000 800
     , update = update
     , view = view
     , inputs = []

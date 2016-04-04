@@ -1,4 +1,4 @@
-module Budget.Account.Default (view, init, update, Model, Action) where
+module Budget.Account (view, init, update, Model, Action) where
 
 import Html exposing (div, span, text, button, Html, input)
 import Html.Events exposing (on, targetValue, onClick)
@@ -6,47 +6,40 @@ import Html.Attributes exposing (class, id, placeholder, value)
 import Signal exposing (message, Address, forwardTo)
 import Effects exposing (Effects)
 import String exposing (toInt)
+import Budget.Account.Common as Common
+import Budget.Account.Types exposing (..)
+import Budget.Account.Tithing as AccountTithing
+import Budget.Account.Fixed as AccountFixed
+import Budget.Account.Percentage as AccountPercentage
 --import Task exposing (..)
 
 
-type Mode =
-    Edit
-  | NoEdit
-
-
-type alias Model =
-  { name: String
-  , amount: Int
-  , newName: String
-  , newAmount: String
-  , mode: Mode
-  , error: String
-  , baseAmount: Int
-  , currentAmount: Int
-  , factor: Int
-  }
-
-
 type Action =
-    Update String String
-  | UpdateNewName String
-  | UpdateNewAmount String
-  | EditMode
+      Update String String
+    | UpdateNewName String
+    | UpdateNewAmount String
+    | EditMode
 
 
-init : String -> Int -> Int -> Int -> Int -> (Model, Effects Action)
-init name amount baseAmount currentAmount factor =
-  ({ name = name
-   , amount = amount
-   , newName = name
-   , newAmount = (toString amount)
-   , mode = NoEdit
-   , error = ""
-   , baseAmount = baseAmount
-   , currentAmount = currentAmount
-   , factor = factor
-   }, Effects.none)
+type alias Model = Budget.Account.Types.Model
 
+
+init : String -> Int -> Int -> Int -> Int -> AccountType -> (Model, Effects Action)
+init name amount baseAmount currentAmount factor accountType =
+  let m = { name = name
+           , amount = amount
+           , newName = name
+           , newAmount = (toString amount)
+           , mode = NoEdit
+           , error = ""
+           , baseAmount = baseAmount
+           , currentAmount = currentAmount
+           , factor = factor
+           , accountType = accountType
+           }
+      calcAmount = Common.calculate m
+  in
+    ({m | amount = calcAmount, newAmount = (toString calcAmount)}, Effects.none)
 
 update : Action -> Model -> (Model, Effects Action)
 update action model =
@@ -68,13 +61,18 @@ update action model =
     UpdateNewAmount newAmount ->
       ({model | newAmount = newAmount}, Effects.none)
     EditMode ->
-      ({model | mode = Edit}, Effects.none)
+      if canEdit model then
+        ({model | mode = Edit}, Effects.none)
+      else
+        (model, Effects.none)
 
 
 view : Address Action -> Model -> Html
 view address model =
   let
     error = if model.error /= "" then [text model.error] else []
+    editable = Common.canEdit model
+    editButton = if editable then [button [onClick address (EditMode)] [text "Edit"]]  else []
     account =
       if model.mode == Edit then
         [ input [ value model.newName
@@ -91,7 +89,14 @@ view address model =
         [ span [] [text model.name]
         , text " "
         , span [] [text (toString model.amount)]
-        , button [onClick address (EditMode)] [text "Edit"]
-        ]
+        ] ++ editButton
   in
     div [] account
+
+
+canEdit : Model -> Bool
+canEdit model =
+  case model.accountType of
+    Tithing -> AccountTithing.canEdit
+    Fixed -> AccountFixed.canEdit
+    Percentage -> AccountPercentage.canEdit

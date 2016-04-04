@@ -1,10 +1,10 @@
-module Budget.Account.Tithing (calculate, canEdit) where
+module Budget.Account.Percentage (calculate, canEdit) where
 
 import Budget.Account.Types exposing (Model, AccountType, Mode)
 
 calculate : Model -> Int
 calculate model =
-  floor <| toFloat model.baseAmount * 0.10
+  floor <| (toFloat model.factor / 100) * (toFloat model.baseAmount)
 
 canEdit : Bool
 canEdit = False

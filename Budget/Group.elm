@@ -1,8 +1,10 @@
 module Budget.Group (view, init, update, Model, Action) where
 
-import Budget.Account.Default as BudgetAccount
+import Budget.Account as BudgetAccount
+import Budget.Account.Common as BudgetCommon
+import Budget.Account.Types exposing (..)
 
-import Html exposing (div, span, text, button, Html, input)
+import Html exposing (div, span, text, button, Html, input, select, option)
 import Html.Events exposing (on, targetValue, onClick)
 import Html.Attributes exposing (class, id, placeholder, value)
 import Signal exposing (message, Address, forwardTo)
@@ -14,27 +16,34 @@ type alias ID = Int
 type alias Model =
   { name : String
   , newAccountName : String
-  , newAccountAmount : String
+  , newAccountFactor : String
+  , newAccountType : String
   , error : String
   , accounts : List (ID, BudgetAccount.Model)
+  , baseAmount : Int
+  , currentAmount : Int
   , nextID : ID
   }
 
-init : String ->  (Model, Effects Action)
-init name =
+init : String -> Int -> Int ->  (Model, Effects Action)
+init name baseAmount currentAmount =
   ({ name = name
    , accounts = []
    , newAccountName = ""
-   , newAccountAmount = ""
+   , newAccountFactor = ""
+   , newAccountType = ""
    , error = ""
    , nextID = 0
+   , baseAmount = baseAmount
+   , currentAmount = currentAmount
    }, Effects.none)
 
 type Action =
     UpdateAccount ID BudgetAccount.Action
   | UpdateNewName String
-  | UpdateNewAmount String
-  | Add String String
+  | UpdateNewFactor String
+  | UpdateNewAccountType String
+  | Add String String String
   | Remove ID
 
 update : Action -> Model -> (Model, Effects Action)
@@ -43,8 +52,11 @@ update action model =
     UpdateNewName name ->
       ({model | newAccountName = name}, Effects.none)
 
-    UpdateNewAmount amount ->
-      ({model | newAccountAmount = amount}, Effects.none)
+    UpdateNewFactor amount ->
+      ({model | newAccountFactor = amount}, Effects.none)
+
+    UpdateNewAccountType accountType ->
+      ({model | newAccountType = accountType}, Effects.none)
 
     UpdateAccount id budgetAction ->
       let updateAccount (accountId, account) =
@@ -55,21 +67,25 @@ update action model =
       in
         ({model | accounts = List.map updateAccount model.accounts}, Effects.none)
 
-    Add name amount ->
-      case toInt amount of
-        Ok amount ->
-          let newAccount = (model.nextID, fst <| BudgetAccount.init name amount 1000 800 0)
-              newAccounts = model.accounts ++ [ newAccount ]
-          in
-            ({model |
-               accounts = newAccounts
-             , nextID = model.nextID + 1
-             , newAccountName = ""
-             , newAccountAmount = ""
-             , error = ""
-             }, Effects.none)
-        Err _ ->
-          ({model | error = "Could not get a number from account value"}, Effects.none)
+    Add name amount accountType ->
+      let mAccountType = BudgetCommon.stringToAccountType accountType
+          rAmount = toInt amount
+      in
+        case (rAmount, mAccountType) of
+          (Ok amnt, Just acctType) ->
+            let newAccount = (model.nextID, fst <| BudgetAccount.init name amnt model.baseAmount model.currentAmount amnt acctType)
+                newAccounts = model.accounts ++ [ newAccount ]
+            in
+              ({model |
+                 accounts = newAccounts
+               , nextID = model.nextID + 1
+               , newAccountName = ""
+               , newAccountFactor = ""
+               , newAccountType = ""
+               , error = ""
+               }, Effects.none)
+          _ ->
+            ({model | error = "Error, could not add account"}, Effects.none)
 
     Remove id ->
       let newAccounts = List.filter (\(accountId, _) -> accountId == id) model.accounts
@@ -90,11 +106,20 @@ view address model =
                           , placeholder "Account Name"
                           , value model.newAccountName
                           ] []
-                  , input [ on "input" targetValue (\amount -> message address (UpdateNewAmount amount))
-                          , placeholder "Account Amount"
-                          , value model.newAccountAmount
+                  , input [ on "input" targetValue (\amount -> message address (UpdateNewFactor amount))
+                          , placeholder "Account Factor"
+                          , value model.newAccountFactor
                           ] []
-                  , button [onClick address (Add model.newAccountName model.newAccountAmount)] [text "Add Account"]
+                  , select
+                      [ on "change" targetValue (\accountType -> message address (UpdateNewAccountType accountType))
+                      , value model.newAccountType
+                      ]
+                      [ option [value ""] [text "Select Account Type"]
+                      , option [value (BudgetCommon.accountTypeToString Tithing)] [text (BudgetCommon.accountTypeToString Tithing)]
+                      , option [value (BudgetCommon.accountTypeToString Fixed)] [text (BudgetCommon.accountTypeToString Fixed)]
+                      , option [value (BudgetCommon.accountTypeToString Percentage)] [text (BudgetCommon.accountTypeToString Percentage)]
+                      ]
+                  , button [onClick address (Add model.newAccountName model.newAccountFactor model.newAccountType)] [text "Add Account"]
                   ] ++ errors)
         ] ++ accounts ++
         [ div [] [ span [] [text "Total: "]
