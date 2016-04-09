@@ -10786,7 +10786,7 @@ Elm.Budget.Account.Percentage.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm);
    var _op = {};
    var canEdit = false;
-   var calculate = function (model) {    return $Basics.floor($Basics.toFloat(model.factor) / 100 * $Basics.toFloat(model.baseAmount));};
+   var calculate = function (model) {    return $Basics.floor($Basics.toFloat(model.factor) / 100 * $Basics.toFloat(model.currentAmount));};
    return _elm.Budget.Account.Percentage.values = {_op: _op,calculate: calculate,canEdit: canEdit};
 };
 Elm.Budget = Elm.Budget || {};
@@ -10972,6 +10972,7 @@ Elm.Budget.Group.make = function (_elm) {
       var _p2 = action;
       switch (_p2.ctor)
       {case "UpdateNewName": return {ctor: "_Tuple2",_0: _U.update(model,{newAccountName: _p2._0}),_1: $Effects.none};
+         case "UpdateCurrentAmount": return {ctor: "_Tuple2",_0: _U.update(model,{currentAmount: _p2._0}),_1: $Effects.none};
          case "UpdateNewFactor": return {ctor: "_Tuple2",_0: _U.update(model,{newAccountFactor: _p2._0}),_1: $Effects.none};
          case "UpdateNewAccountType": return {ctor: "_Tuple2",_0: _U.update(model,{newAccountType: _p2._0}),_1: $Effects.none};
          case "UpdateAccount": var updateAccount = function (_p3) {
@@ -10990,10 +10991,10 @@ Elm.Budget.Group.make = function (_elm) {
                                   ,_0: model.nextID
                                   ,_1: $Basics.fst(A6($Budget$Account.init,_p2._0,_p8,model.baseAmount,model.currentAmount,_p8,_p7._1._0))};
                  var newAccounts = A2($Basics._op["++"],model.accounts,_U.list([newAccount]));
-                 return {ctor: "_Tuple2"
-                        ,_0: _U.update(model,
-                        {accounts: newAccounts,nextID: model.nextID + 1,newAccountName: "",newAccountFactor: "",newAccountType: "",error: ""})
-                        ,_1: $Effects.none};
+                 var newModel = _U.update(model,
+                 {accounts: newAccounts,nextID: model.nextID + 1,newAccountName: "",newAccountFactor: "",newAccountType: "",error: ""});
+                 var newCurrentAmount = model.currentAmount - $Budget$Account$Common.calculate($Basics.snd(newAccount));
+                 return {ctor: "_Tuple2",_0: _U.update(newModel,{currentAmount: newCurrentAmount}),_1: $Effects.none};
               } else {
                  return {ctor: "_Tuple2",_0: _U.update(model,{error: "Error, could not add account"}),_1: $Effects.none};
               }
@@ -11002,6 +11003,7 @@ Elm.Budget.Group.make = function (_elm) {
    });
    var Remove = function (a) {    return {ctor: "Remove",_0: a};};
    var Add = F3(function (a,b,c) {    return {ctor: "Add",_0: a,_1: b,_2: c};});
+   var UpdateCurrentAmount = function (a) {    return {ctor: "UpdateCurrentAmount",_0: a};};
    var UpdateNewAccountType = function (a) {    return {ctor: "UpdateNewAccountType",_0: a};};
    var UpdateNewFactor = function (a) {    return {ctor: "UpdateNewFactor",_0: a};};
    var UpdateNewName = function (a) {    return {ctor: "UpdateNewName",_0: a};};
@@ -11057,7 +11059,10 @@ Elm.Budget.Group.make = function (_elm) {
       accounts,
       _U.list([A2($Html.div,
       _U.list([]),
-      _U.list([A2($Html.span,_U.list([]),_U.list([$Html.text("Total: ")])),$Html.text($Basics.toString(accountsTotal(model)))]))]))));
+      _U.list([A2($Html.span,_U.list([]),_U.list([$Html.text("Total: ")]))
+              ,$Html.text($Basics.toString(accountsTotal(model)))
+              ,A2($Html.span,_U.list([]),_U.list([$Html.text("Remaining: ")]))
+              ,$Html.text($Basics.toString(model.currentAmount))]))]))));
    });
    var init = F3(function (name,baseAmount,currentAmount) {
       return {ctor: "_Tuple2"

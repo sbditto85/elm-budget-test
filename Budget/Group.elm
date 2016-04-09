@@ -8,8 +8,9 @@ import Html exposing (div, span, text, button, Html, input, select, option)
 import Html.Events exposing (on, targetValue, onClick)
 import Html.Attributes exposing (class, id, placeholder, value)
 import Signal exposing (message, Address, forwardTo)
-import Effects exposing (Effects)
+import Effects exposing (Effects, task)
 import String exposing (toInt)
+--import Task exposing (succeed)
 
 type alias ID = Int
 
@@ -43,6 +44,7 @@ type Action =
   | UpdateNewName String
   | UpdateNewFactor String
   | UpdateNewAccountType String
+  | UpdateCurrentAmount Int
   | Add String String String
   | Remove ID
 
@@ -51,6 +53,9 @@ update action model =
   case action of
     UpdateNewName name ->
       ({model | newAccountName = name}, Effects.none)
+
+    UpdateCurrentAmount amount ->
+      ({model | currentAmount = amount}, Effects.none)
 
     UpdateNewFactor amount ->
       ({model | newAccountFactor = amount}, Effects.none)
@@ -75,17 +80,23 @@ update action model =
           (Ok amnt, Just acctType) ->
             let newAccount = (model.nextID, fst <| BudgetAccount.init name amnt model.baseAmount model.currentAmount amnt acctType)
                 newAccounts = model.accounts ++ [ newAccount ]
+                newModel = {model |
+                             accounts = newAccounts
+                           , nextID = model.nextID + 1
+                           , newAccountName = ""
+                           , newAccountFactor = ""
+                           , newAccountType = ""
+                           , error = ""
+                           }
+                newCurrentAmount = model.currentAmount - (BudgetCommon.calculate (snd newAccount))
             in
-              ({model |
-                 accounts = newAccounts
-               , nextID = model.nextID + 1
-               , newAccountName = ""
-               , newAccountFactor = ""
-               , newAccountType = ""
-               , error = ""
-               }, Effects.none)
+              ({newModel |
+                 currentAmount = newCurrentAmount
+               }, Effects.none) -- task <| succeed (UpdateCurrentAmount 300))
           _ ->
-            ({model | error = "Error, could not add account"}, Effects.none)
+            ({model |
+               error = "Error, could not add account"
+             }, Effects.none)
 
     Remove id ->
       let newAccounts = List.filter (\(accountId, _) -> accountId == id) model.accounts
@@ -124,6 +135,8 @@ view address model =
         ] ++ accounts ++
         [ div [] [ span [] [text "Total: "]
                  , text (toString (accountsTotal model))
+                 , span [] [text "Remaining: "]
+                 , text (toString (model.currentAmount))
                  ]
         ]
       )
