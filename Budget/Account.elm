@@ -1,4 +1,4 @@
-module Budget.Account (view, init, update, Model, Action) where
+module Budget.Account (view, init, update, Model, Action(..)) where
 
 import Html exposing (div, span, text, button, Html, input)
 import Html.Events exposing (on, targetValue, onClick)
@@ -15,7 +15,8 @@ import Budget.Account.Percentage as AccountPercentage
 
 
 type Action =
-      Update String String
+      Recalculate Int Int
+    | Update String String
     | UpdateNewName String
     | UpdateNewAmount String
     | EditMode
@@ -44,16 +45,27 @@ init name amount baseAmount currentAmount factor accountType =
 update : Action -> Model -> (Model, Effects Action)
 update action model =
   case action of
-    Update name amount ->
-      case toInt amount of
-        Ok amount ->
-          ({model | name = name
-           , amount = amount
-           , newName = name
-           , newAmount = toString amount
-           , mode = NoEdit
-           , error = ""
-           }, Effects.none)
+    Recalculate baseAmount currentAmount ->
+      let
+        newModel = {model | baseAmount = baseAmount, currentAmount = currentAmount}
+        amount = Common.calculate newModel
+      in
+        ({newModel | amount = amount}, Effects.none)
+
+    Update name factor ->
+      case toInt factor of
+        Ok factor ->
+          let
+            amount = Common.calculate {model | factor = factor}
+          in
+            ({model | name = name
+             , amount = amount
+             , newName = name
+             , newAmount = toString amount
+             , mode = NoEdit
+             , factor = factor
+             , error = ""
+             }, Effects.none)
         Err _ ->
           ({model | error = "Couldn't get a number for the amount."}, Effects.none)
     UpdateNewName newName ->

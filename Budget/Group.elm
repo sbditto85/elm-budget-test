@@ -69,8 +69,18 @@ update action model =
               (accountId, fst <| BudgetAccount.update budgetAction account)
             else
               (accountId, account)
+          newModel = {model | accounts = List.map updateAccount model.accounts}
+          recalculate (accountId, account) (accounts, currentAmount) =
+            case budgetAction of
+              BudgetAccount.Update _ _ ->
+                let
+                  newAccount = fst <| BudgetAccount.update (BudgetAccount.Recalculate newModel.baseAmount currentAmount) account
+                in
+                  (accounts ++ [(accountId, newAccount)], currentAmount - newAccount.amount)
+              _ -> (newModel.accounts, newModel.currentAmount)
+          (accounts, currentAmount) = List.foldl recalculate ([], model.baseAmount) newModel.accounts
       in
-        ({model | accounts = List.map updateAccount model.accounts}, Effects.none)
+        ({newModel | currentAmount = currentAmount, accounts = accounts}, Effects.none)
 
     Add name amount accountType ->
       let mAccountType = BudgetCommon.stringToAccountType accountType
@@ -135,7 +145,7 @@ view address model =
         ] ++ accounts ++
         [ div [] [ span [] [text "Total: "]
                  , text (toString (accountsTotal model))
-                 , span [] [text "Remaining: "]
+                 , span [] [text " Remaining: "]
                  , text (toString (model.currentAmount))
                  ]
         ]

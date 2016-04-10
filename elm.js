@@ -10880,12 +10880,17 @@ Elm.Budget.Account.make = function (_elm) {
    var update = F2(function (action,model) {
       var _p1 = action;
       switch (_p1.ctor)
-      {case "Update": var _p4 = _p1._0;
+      {case "Recalculate": var newModel = _U.update(model,{baseAmount: _p1._0,currentAmount: _p1._1});
+           var amount = $Budget$Account$Common.calculate(newModel);
+           return {ctor: "_Tuple2",_0: _U.update(newModel,{amount: amount}),_1: $Effects.none};
+         case "Update": var _p4 = _p1._0;
            var _p2 = $String.toInt(_p1._1);
            if (_p2.ctor === "Ok") {
                  var _p3 = _p2._0;
+                 var amount = $Budget$Account$Common.calculate(_U.update(model,{factor: _p3}));
                  return {ctor: "_Tuple2"
-                        ,_0: _U.update(model,{name: _p4,amount: _p3,newName: _p4,newAmount: $Basics.toString(_p3),mode: $Budget$Account$Types.NoEdit,error: ""})
+                        ,_0: _U.update(model,
+                        {name: _p4,amount: amount,newName: _p4,newAmount: $Basics.toString(amount),mode: $Budget$Account$Types.NoEdit,factor: _p3,error: ""})
                         ,_1: $Effects.none};
               } else {
                  return {ctor: "_Tuple2",_0: _U.update(model,{error: "Couldn\'t get a number for the amount."}),_1: $Effects.none};
@@ -10942,7 +10947,16 @@ Elm.Budget.Account.make = function (_elm) {
       editButton);
       return A2($Html.div,_U.list([]),account);
    });
-   return _elm.Budget.Account.values = {_op: _op,view: view,init: init,update: update};
+   var Recalculate = F2(function (a,b) {    return {ctor: "Recalculate",_0: a,_1: b};});
+   return _elm.Budget.Account.values = {_op: _op
+                                       ,view: view
+                                       ,init: init
+                                       ,update: update
+                                       ,Recalculate: Recalculate
+                                       ,Update: Update
+                                       ,UpdateNewName: UpdateNewName
+                                       ,UpdateNewAmount: UpdateNewAmount
+                                       ,EditMode: EditMode};
 };
 Elm.Budget = Elm.Budget || {};
 Elm.Budget.Group = Elm.Budget.Group || {};
@@ -10975,21 +10989,40 @@ Elm.Budget.Group.make = function (_elm) {
          case "UpdateCurrentAmount": return {ctor: "_Tuple2",_0: _U.update(model,{currentAmount: _p2._0}),_1: $Effects.none};
          case "UpdateNewFactor": return {ctor: "_Tuple2",_0: _U.update(model,{newAccountFactor: _p2._0}),_1: $Effects.none};
          case "UpdateNewAccountType": return {ctor: "_Tuple2",_0: _U.update(model,{newAccountType: _p2._0}),_1: $Effects.none};
-         case "UpdateAccount": var updateAccount = function (_p3) {
+         case "UpdateAccount": var _p14 = _p2._1;
+           var updateAccount = function (_p3) {
               var _p4 = _p3;
               var _p6 = _p4._0;
               var _p5 = _p4._1;
-              return _U.eq(_p6,_p2._0) ? {ctor: "_Tuple2",_0: _p6,_1: $Basics.fst(A2($Budget$Account.update,_p2._1,_p5))} : {ctor: "_Tuple2",_0: _p6,_1: _p5};
+              return _U.eq(_p6,_p2._0) ? {ctor: "_Tuple2",_0: _p6,_1: $Basics.fst(A2($Budget$Account.update,_p14,_p5))} : {ctor: "_Tuple2",_0: _p6,_1: _p5};
            };
-           return {ctor: "_Tuple2",_0: _U.update(model,{accounts: A2($List.map,updateAccount,model.accounts)}),_1: $Effects.none};
+           var newModel = _U.update(model,{accounts: A2($List.map,updateAccount,model.accounts)});
+           var recalculate = F2(function (_p8,_p7) {
+              var _p9 = _p8;
+              var _p10 = _p7;
+              var _p12 = _p10._1;
+              var _p11 = _p14;
+              if (_p11.ctor === "Update") {
+                    var newAccount = $Basics.fst(A2($Budget$Account.update,A2($Budget$Account.Recalculate,newModel.baseAmount,_p12),_p9._1));
+                    return {ctor: "_Tuple2"
+                           ,_0: A2($Basics._op["++"],_p10._0,_U.list([{ctor: "_Tuple2",_0: _p9._0,_1: newAccount}]))
+                           ,_1: _p12 - newAccount.amount};
+                 } else {
+                    return {ctor: "_Tuple2",_0: newModel.accounts,_1: newModel.currentAmount};
+                 }
+           });
+           var _p13 = A3($List.foldl,recalculate,{ctor: "_Tuple2",_0: _U.list([]),_1: model.baseAmount},newModel.accounts);
+           var accounts = _p13._0;
+           var currentAmount = _p13._1;
+           return {ctor: "_Tuple2",_0: _U.update(newModel,{currentAmount: currentAmount,accounts: accounts}),_1: $Effects.none};
          case "Add": var rAmount = $String.toInt(_p2._1);
            var mAccountType = $Budget$Account$Common.stringToAccountType(_p2._2);
-           var _p7 = {ctor: "_Tuple2",_0: rAmount,_1: mAccountType};
-           if (_p7.ctor === "_Tuple2" && _p7._0.ctor === "Ok" && _p7._1.ctor === "Just") {
-                 var _p8 = _p7._0._0;
+           var _p15 = {ctor: "_Tuple2",_0: rAmount,_1: mAccountType};
+           if (_p15.ctor === "_Tuple2" && _p15._0.ctor === "Ok" && _p15._1.ctor === "Just") {
+                 var _p16 = _p15._0._0;
                  var newAccount = {ctor: "_Tuple2"
                                   ,_0: model.nextID
-                                  ,_1: $Basics.fst(A6($Budget$Account.init,_p2._0,_p8,model.baseAmount,model.currentAmount,_p8,_p7._1._0))};
+                                  ,_1: $Basics.fst(A6($Budget$Account.init,_p2._0,_p16,model.baseAmount,model.currentAmount,_p16,_p15._1._0))};
                  var newAccounts = A2($Basics._op["++"],model.accounts,_U.list([newAccount]));
                  var newModel = _U.update(model,
                  {accounts: newAccounts,nextID: model.nextID + 1,newAccountName: "",newAccountFactor: "",newAccountType: "",error: ""});
@@ -10998,7 +11031,7 @@ Elm.Budget.Group.make = function (_elm) {
               } else {
                  return {ctor: "_Tuple2",_0: _U.update(model,{error: "Error, could not add account"}),_1: $Effects.none};
               }
-         default: var newAccounts = A2($List.filter,function (_p9) {    var _p10 = _p9;return _U.eq(_p10._0,_p2._0);},model.accounts);
+         default: var newAccounts = A2($List.filter,function (_p17) {    var _p18 = _p17;return _U.eq(_p18._0,_p2._0);},model.accounts);
            return {ctor: "_Tuple2",_0: _U.update(model,{accounts: newAccounts}),_1: $Effects.none};}
    });
    var Remove = function (a) {    return {ctor: "Remove",_0: a};};
@@ -11008,9 +11041,9 @@ Elm.Budget.Group.make = function (_elm) {
    var UpdateNewFactor = function (a) {    return {ctor: "UpdateNewFactor",_0: a};};
    var UpdateNewName = function (a) {    return {ctor: "UpdateNewName",_0: a};};
    var UpdateAccount = F2(function (a,b) {    return {ctor: "UpdateAccount",_0: a,_1: b};});
-   var viewAccount = F2(function (address,_p11) {
-      var _p12 = _p11;
-      return A2($Budget$Account.view,A2($Signal.forwardTo,address,UpdateAccount(_p12._0)),_p12._1);
+   var viewAccount = F2(function (address,_p19) {
+      var _p20 = _p19;
+      return A2($Budget$Account.view,A2($Signal.forwardTo,address,UpdateAccount(_p20._0)),_p20._1);
    });
    var view = F2(function (address,model) {
       var errors = !_U.eq(model.error,"") ? _U.list([$Html.text(model.error)]) : _U.list([]);
@@ -11061,7 +11094,7 @@ Elm.Budget.Group.make = function (_elm) {
       _U.list([]),
       _U.list([A2($Html.span,_U.list([]),_U.list([$Html.text("Total: ")]))
               ,$Html.text($Basics.toString(accountsTotal(model)))
-              ,A2($Html.span,_U.list([]),_U.list([$Html.text("Remaining: ")]))
+              ,A2($Html.span,_U.list([]),_U.list([$Html.text(" Remaining: ")]))
               ,$Html.text($Basics.toString(model.currentAmount))]))]))));
    });
    var init = F3(function (name,baseAmount,currentAmount) {
@@ -11100,7 +11133,7 @@ Elm.Main.make = function (_elm) {
    $StartApp = Elm.StartApp.make(_elm),
    $Task = Elm.Task.make(_elm);
    var _op = {};
-   var app = $StartApp.start({init: A3($Budget$Group.init,"Group",1000,800),update: $Budget$Group.update,view: $Budget$Group.view,inputs: _U.list([])});
+   var app = $StartApp.start({init: A3($Budget$Group.init,"Group",1000,1000),update: $Budget$Group.update,view: $Budget$Group.view,inputs: _U.list([])});
    var main = app.html;
    var tasks = Elm.Native.Task.make(_elm).performSignal("tasks",app.tasks);
    return _elm.Main.values = {_op: _op,app: app,main: main};
