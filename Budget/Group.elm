@@ -136,7 +136,7 @@ view address model =
                       , value model.newAccountType
                       ]
                       [ option [value ""] [text "Select Account Type"]
-                      , option [value (BudgetCommon.accountTypeToString Tithing)] [text (BudgetCommon.accountTypeToString Tithing)]
+                      , option [value (BudgetCommon.accountTypeToString PercentBase)] [text (BudgetCommon.accountTypeToString PercentBase)]
                       , option [value (BudgetCommon.accountTypeToString Fixed)] [text (BudgetCommon.accountTypeToString Fixed)]
                       , option [value (BudgetCommon.accountTypeToString Percentage)] [text (BudgetCommon.accountTypeToString Percentage)]
                       ]

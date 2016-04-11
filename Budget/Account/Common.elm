@@ -1,15 +1,15 @@
 module Budget.Account.Common (accountTypeToString, stringToAccountType, calculate, canEdit) where
 
 import Budget.Account.Types exposing (..)
-import Budget.Account.Tithing as Tithing
+import Budget.Account.PercentBase as PercentBase
 import Budget.Account.Fixed as Fixed
 import Budget.Account.Percentage as Percentage
 
 accountTypeToString : AccountType -> String
 accountTypeToString accountType =
   case accountType of
-    Tithing ->
-      "Tithing"
+    PercentBase ->
+      "PercentBase"
     Fixed ->
       "Fixed"
     Percentage ->
@@ -18,8 +18,8 @@ accountTypeToString accountType =
 stringToAccountType : String -> Maybe AccountType
 stringToAccountType str =
   case str of
-    "Tithing" ->
-      Just Tithing
+    "PercentBase" ->
+      Just PercentBase
     "Fixed" ->
       Just Fixed
     "Percentage" ->
@@ -30,8 +30,8 @@ stringToAccountType str =
 calculate : Model -> Int
 calculate model =
   case model.accountType of
-    Tithing ->
-      Tithing.calculate model
+    PercentBase ->
+      PercentBase.calculate model
     Percentage ->
       Percentage.calculate model
     Fixed ->
@@ -40,8 +40,8 @@ calculate model =
 canEdit : Model -> Bool
 canEdit model =
   case model.accountType of
-    Tithing ->
-      Tithing.canEdit
+    PercentBase ->
+      PercentBase.canEdit
     Percentage ->
       Percentage.canEdit
     Fixed ->

@@ -8,7 +8,7 @@ import Effects exposing (Effects)
 import String exposing (toInt)
 import Budget.Account.Common as Common
 import Budget.Account.Types exposing (..)
-import Budget.Account.Tithing as AccountTithing
+import Budget.Account.PercentBase as AccountPercentBase
 import Budget.Account.Fixed as AccountFixed
 import Budget.Account.Percentage as AccountPercentage
 --import Task exposing (..)
@@ -109,6 +109,6 @@ view address model =
 canEdit : Model -> Bool
 canEdit model =
   case model.accountType of
-    Tithing -> AccountTithing.canEdit
+    PercentBase -> AccountPercentBase.canEdit
     Fixed -> AccountFixed.canEdit
     Percentage -> AccountPercentage.canEdit

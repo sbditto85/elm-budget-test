@@ -10720,18 +10720,18 @@ Elm.Budget.Account.Types.make = function (_elm) {
    var Edit = {ctor: "Edit"};
    var Percentage = {ctor: "Percentage"};
    var Fixed = {ctor: "Fixed"};
-   var Tithing = {ctor: "Tithing"};
-   return _elm.Budget.Account.Types.values = {_op: _op,Model: Model,Tithing: Tithing,Fixed: Fixed,Percentage: Percentage,Edit: Edit,NoEdit: NoEdit};
+   var PercentBase = {ctor: "PercentBase"};
+   return _elm.Budget.Account.Types.values = {_op: _op,Model: Model,PercentBase: PercentBase,Fixed: Fixed,Percentage: Percentage,Edit: Edit,NoEdit: NoEdit};
 };
 Elm.Budget = Elm.Budget || {};
 Elm.Budget.Account = Elm.Budget.Account || {};
-Elm.Budget.Account.Tithing = Elm.Budget.Account.Tithing || {};
-Elm.Budget.Account.Tithing.make = function (_elm) {
+Elm.Budget.Account.PercentBase = Elm.Budget.Account.PercentBase || {};
+Elm.Budget.Account.PercentBase.make = function (_elm) {
    "use strict";
    _elm.Budget = _elm.Budget || {};
    _elm.Budget.Account = _elm.Budget.Account || {};
-   _elm.Budget.Account.Tithing = _elm.Budget.Account.Tithing || {};
-   if (_elm.Budget.Account.Tithing.values) return _elm.Budget.Account.Tithing.values;
+   _elm.Budget.Account.PercentBase = _elm.Budget.Account.PercentBase || {};
+   if (_elm.Budget.Account.PercentBase.values) return _elm.Budget.Account.PercentBase.values;
    var _U = Elm.Native.Utils.make(_elm),
    $Basics = Elm.Basics.make(_elm),
    $Budget$Account$Types = Elm.Budget.Account.Types.make(_elm),
@@ -10742,8 +10742,8 @@ Elm.Budget.Account.Tithing.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm);
    var _op = {};
    var canEdit = false;
-   var calculate = function (model) {    return $Basics.floor($Basics.toFloat(model.baseAmount) * 0.1);};
-   return _elm.Budget.Account.Tithing.values = {_op: _op,calculate: calculate,canEdit: canEdit};
+   var calculate = function (model) {    return $Basics.floor($Basics.toFloat(model.factor) / 100 * $Basics.toFloat(model.baseAmount));};
+   return _elm.Budget.Account.PercentBase.values = {_op: _op,calculate: calculate,canEdit: canEdit};
 };
 Elm.Budget = Elm.Budget || {};
 Elm.Budget.Account = Elm.Budget.Account || {};
@@ -10801,8 +10801,8 @@ Elm.Budget.Account.Common.make = function (_elm) {
    var _U = Elm.Native.Utils.make(_elm),
    $Basics = Elm.Basics.make(_elm),
    $Budget$Account$Fixed = Elm.Budget.Account.Fixed.make(_elm),
+   $Budget$Account$PercentBase = Elm.Budget.Account.PercentBase.make(_elm),
    $Budget$Account$Percentage = Elm.Budget.Account.Percentage.make(_elm),
-   $Budget$Account$Tithing = Elm.Budget.Account.Tithing.make(_elm),
    $Budget$Account$Types = Elm.Budget.Account.Types.make(_elm),
    $Debug = Elm.Debug.make(_elm),
    $List = Elm.List.make(_elm),
@@ -10813,21 +10813,21 @@ Elm.Budget.Account.Common.make = function (_elm) {
    var canEdit = function (model) {
       var _p0 = model.accountType;
       switch (_p0.ctor)
-      {case "Tithing": return $Budget$Account$Tithing.canEdit;
+      {case "PercentBase": return $Budget$Account$PercentBase.canEdit;
          case "Percentage": return $Budget$Account$Percentage.canEdit;
          default: return $Budget$Account$Fixed.canEdit;}
    };
    var calculate = function (model) {
       var _p1 = model.accountType;
       switch (_p1.ctor)
-      {case "Tithing": return $Budget$Account$Tithing.calculate(model);
+      {case "PercentBase": return $Budget$Account$PercentBase.calculate(model);
          case "Percentage": return $Budget$Account$Percentage.calculate(model);
          default: return $Budget$Account$Fixed.calculate(model);}
    };
    var stringToAccountType = function (str) {
       var _p2 = str;
       switch (_p2)
-      {case "Tithing": return $Maybe.Just($Budget$Account$Types.Tithing);
+      {case "PercentBase": return $Maybe.Just($Budget$Account$Types.PercentBase);
          case "Fixed": return $Maybe.Just($Budget$Account$Types.Fixed);
          case "Percentage": return $Maybe.Just($Budget$Account$Types.Percentage);
          default: return $Maybe.Nothing;}
@@ -10835,7 +10835,7 @@ Elm.Budget.Account.Common.make = function (_elm) {
    var accountTypeToString = function (accountType) {
       var _p3 = accountType;
       switch (_p3.ctor)
-      {case "Tithing": return "Tithing";
+      {case "PercentBase": return "PercentBase";
          case "Fixed": return "Fixed";
          default: return "Percentage";}
    };
@@ -10856,8 +10856,8 @@ Elm.Budget.Account.make = function (_elm) {
    $Basics = Elm.Basics.make(_elm),
    $Budget$Account$Common = Elm.Budget.Account.Common.make(_elm),
    $Budget$Account$Fixed = Elm.Budget.Account.Fixed.make(_elm),
+   $Budget$Account$PercentBase = Elm.Budget.Account.PercentBase.make(_elm),
    $Budget$Account$Percentage = Elm.Budget.Account.Percentage.make(_elm),
-   $Budget$Account$Tithing = Elm.Budget.Account.Tithing.make(_elm),
    $Budget$Account$Types = Elm.Budget.Account.Types.make(_elm),
    $Debug = Elm.Debug.make(_elm),
    $Effects = Elm.Effects.make(_elm),
@@ -10873,7 +10873,7 @@ Elm.Budget.Account.make = function (_elm) {
    var canEdit = function (model) {
       var _p0 = model.accountType;
       switch (_p0.ctor)
-      {case "Tithing": return $Budget$Account$Tithing.canEdit;
+      {case "PercentBase": return $Budget$Account$PercentBase.canEdit;
          case "Fixed": return $Budget$Account$Fixed.canEdit;
          default: return $Budget$Account$Percentage.canEdit;}
    };
@@ -11076,8 +11076,8 @@ Elm.Budget.Group.make = function (_elm) {
                       ,$Html$Attributes.value(model.newAccountType)]),
               _U.list([A2($Html.option,_U.list([$Html$Attributes.value("")]),_U.list([$Html.text("Select Account Type")]))
                       ,A2($Html.option,
-                      _U.list([$Html$Attributes.value($Budget$Account$Common.accountTypeToString($Budget$Account$Types.Tithing))]),
-                      _U.list([$Html.text($Budget$Account$Common.accountTypeToString($Budget$Account$Types.Tithing))]))
+                      _U.list([$Html$Attributes.value($Budget$Account$Common.accountTypeToString($Budget$Account$Types.PercentBase))]),
+                      _U.list([$Html.text($Budget$Account$Common.accountTypeToString($Budget$Account$Types.PercentBase))]))
                       ,A2($Html.option,
                       _U.list([$Html$Attributes.value($Budget$Account$Common.accountTypeToString($Budget$Account$Types.Fixed))]),
                       _U.list([$Html.text($Budget$Account$Common.accountTypeToString($Budget$Account$Types.Fixed))]))

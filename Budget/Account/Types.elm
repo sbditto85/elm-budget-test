@@ -1,8 +1,8 @@
-module Budget.Account.Types (Model, AccountType(Tithing, Fixed, Percentage), Mode(Edit, NoEdit)) where
+module Budget.Account.Types (Model, AccountType(PercentBase, Fixed, Percentage), Mode(Edit, NoEdit)) where
 
 
 type AccountType =
-      Tithing
+      PercentBase
     | Fixed
     | Percentage
 
