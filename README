@@ -1,0 +1,5 @@
+To compile use:
+
+elm make Main.elm --output elm.js --warn
+
+just a little project to test out the elm language.
