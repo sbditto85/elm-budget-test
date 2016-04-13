@@ -1,4 +1,4 @@
-module Main where
+module Main (..) where
 
 import StartApp exposing (start)
 import Budget exposing (view, init, update, Action, Model)
@@ -16,9 +16,11 @@ app =
     , inputs = []
     }
 
+
 main : Signal Html.Html
 main =
   app.html
+
 
 port tasks : Signal (Task.Task Never ())
 port tasks =
