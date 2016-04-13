@@ -18,7 +18,7 @@ type Action =
       Recalculate Int Int
     | Update String String
     | UpdateNewName String
-    | UpdateNewAmount String
+    | UpdateNewFactor String
     | EditMode
 
 
@@ -30,7 +30,7 @@ init name amount baseAmount currentAmount factor accountType =
   let m = { name = name
            , amount = amount
            , newName = name
-           , newAmount = (toString amount)
+           , newFactor = (toString factor)
            , mode = NoEdit
            , error = ""
            , baseAmount = baseAmount
@@ -40,7 +40,7 @@ init name amount baseAmount currentAmount factor accountType =
            }
       calcAmount = Common.calculate m
   in
-    ({m | amount = calcAmount, newAmount = (toString calcAmount)}, Effects.none)
+    ({m | amount = calcAmount, newFactor = (toString factor)}, Effects.none)
 
 update : Action -> Model -> (Model, Effects Action)
 update action model =
@@ -61,17 +61,20 @@ update action model =
             ({model | name = name
              , amount = amount
              , newName = name
-             , newAmount = toString amount
+             , newFactor = toString factor
              , mode = NoEdit
              , factor = factor
              , error = ""
              }, Effects.none)
         Err _ ->
           ({model | error = "Couldn't get a number for the amount."}, Effects.none)
+
     UpdateNewName newName ->
       ({model | newName = newName}, Effects.none)
-    UpdateNewAmount newAmount ->
-      ({model | newAmount = newAmount}, Effects.none)
+
+    UpdateNewFactor newFactor ->
+      ({model | newFactor = newFactor}, Effects.none)
+
     EditMode ->
       if canEdit model then
         ({model | mode = Edit}, Effects.none)
@@ -91,11 +94,11 @@ view address model =
                 , placeholder "Account Name"
                 , on "input" targetValue (\name -> message address (UpdateNewName name))
                 ] []
-        , input [ value model.newAmount
-                , placeholder "Account Amount"
-                , on "input" targetValue (\amount -> message address (UpdateNewAmount amount))
+        , input [ value model.newFactor
+                , placeholder "Account Factor"
+                , on "input" targetValue (\factor -> message address (UpdateNewFactor factor))
                 ] []
-        , button [onClick address (Update model.newName model.newAmount)] [text "Update"]
+        , button [onClick address (Update model.newName model.newFactor)] [text "Update"]
         ] ++ error
       else
         [ span [] [text model.name]

@@ -1,7 +1,7 @@
 module Main where
 
 import StartApp exposing (start)
-import Budget.Group exposing (view, init, update, Action, Model)
+import Budget exposing (view, init, update, Action, Model)
 import Html
 import Task
 import Effects exposing (Effects, Never)
@@ -10,7 +10,7 @@ import Effects exposing (Effects, Never)
 app : StartApp.App Model
 app =
   StartApp.start
-    { init = init "Group" 1000 1000
+    { init = init
     , update = update
     , view = view
     , inputs = []

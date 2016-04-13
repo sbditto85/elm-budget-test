@@ -23,6 +23,7 @@ type alias Model =
   , accounts : List (ID, BudgetAccount.Model)
   , baseAmount : Int
   , currentAmount : Int
+  , remainingAmount : Int
   , nextID : ID
   }
 
@@ -35,8 +36,9 @@ init name baseAmount currentAmount =
    , newAccountType = ""
    , error = ""
    , nextID = 0
-   , baseAmount = baseAmount
-   , currentAmount = currentAmount
+   , baseAmount = baseAmount -- TODO: be the amount to budget across all groups
+   , currentAmount = currentAmount -- TODO: be the amount to budget for the group
+   , remainingAmount = currentAmount -- TODO: be the amount left to budget
    }, Effects.none)
 
 type Action =
@@ -70,17 +72,17 @@ update action model =
             else
               (accountId, account)
           newModel = {model | accounts = List.map updateAccount model.accounts}
-          recalculate (accountId, account) (accounts, currentAmount) =
+          recalculate (accountId, account) (accounts, remainingAmount) =
             case budgetAction of
               BudgetAccount.Update _ _ ->
                 let
-                  newAccount = fst <| BudgetAccount.update (BudgetAccount.Recalculate newModel.baseAmount currentAmount) account
+                  newAccount = fst <| BudgetAccount.update (BudgetAccount.Recalculate newModel.baseAmount newModel.currentAmount) account
                 in
-                  (accounts ++ [(accountId, newAccount)], currentAmount - newAccount.amount)
-              _ -> (newModel.accounts, newModel.currentAmount)
-          (accounts, currentAmount) = List.foldl recalculate ([], model.baseAmount) newModel.accounts
+                  (accounts ++ [(accountId, newAccount)], remainingAmount - newAccount.amount)
+              _ -> (newModel.accounts, newModel.remainingAmount)
+          (accounts, remainingAmount) = List.foldl recalculate ([], model.currentAmount) newModel.accounts
       in
-        ({newModel | currentAmount = currentAmount, accounts = accounts}, Effects.none)
+        ({newModel | remainingAmount = remainingAmount, accounts = accounts}, Effects.none)
 
     Add name amount accountType ->
       let mAccountType = BudgetCommon.stringToAccountType accountType
@@ -98,10 +100,10 @@ update action model =
                            , newAccountType = ""
                            , error = ""
                            }
-                newCurrentAmount = model.currentAmount - (BudgetCommon.calculate (snd newAccount))
+                newRemainingAmount = model.remainingAmount - (BudgetCommon.calculate (snd newAccount))
             in
               ({newModel |
-                 currentAmount = newCurrentAmount
+                 remainingAmount = newRemainingAmount
                }, Effects.none) -- task <| succeed (UpdateCurrentAmount 300))
           _ ->
             ({model |
@@ -109,7 +111,7 @@ update action model =
              }, Effects.none)
 
     Remove id ->
-      let newAccounts = List.filter (\(accountId, _) -> accountId == id) model.accounts
+      let newAccounts = List.filter (\(accountId, _) -> accountId /= id) model.accounts
       in
         ({model | accounts = newAccounts }, Effects.none)
 
@@ -146,7 +148,7 @@ view address model =
         [ div [] [ span [] [text "Total: "]
                  , text (toString (accountsTotal model))
                  , span [] [text " Remaining: "]
-                 , text (toString (model.currentAmount))
+                 , text (toString (model.remainingAmount))
                  ]
         ]
       )

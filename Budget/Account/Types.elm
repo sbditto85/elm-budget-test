@@ -15,7 +15,7 @@ type alias Model =
   { name: String
   , amount: Int
   , newName: String
-  , newAmount: String
+  , newFactor: String
   , mode: Mode
   , error: String
   , baseAmount: Int

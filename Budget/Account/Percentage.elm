@@ -7,4 +7,4 @@ calculate model =
   floor <| (toFloat model.factor / 100) * (toFloat model.currentAmount)
 
 canEdit : Bool
-canEdit = False
+canEdit = True
