@@ -1,11 +1,11 @@
-module Budget (view, init, update, Model, Action) where
+module Budget exposing (view, init, update, Model, Action)
 
 import Html exposing (div, span, text, button, Html, input, select, option, hr)
 import Html.Events exposing (on, targetValue, onClick)
 import Html.Attributes exposing (class, id, placeholder, value)
-import Signal exposing (message, Address, forwardTo)
+-- import Signal exposing (message, Address, forwardTo)
 import Budget.Group as BudgetGroup
-import Effects exposing (Effects)
+-- import Effects exposing (Effects)
 import String exposing (toInt)
 
 type alias ID = Int
@@ -20,7 +20,7 @@ type alias Model =
   , nextID : ID
   }
 
-type Action =
+type Msg =
     UpdateGroup ID BudgetGroup.Action
   | UpdateNewName String
   | UpdateNewBaseAmount String
@@ -29,7 +29,7 @@ type Action =
   | Remove ID
 
 
-init : (Model, Effects Action)
+init : (Model, Cmd Action)
 init =
   ({ newGroupName = ""
    , newBaseAmount = "0"
@@ -39,14 +39,14 @@ init =
    , error = ""
    , nextID = 0
    }
-  , Effects.none)
+  , Cmd.none)
 
 
-update : Action -> Model -> (Model, Effects Action)
+update : Msg -> Model -> (Model, Cmd Action)
 update action model =
   case action of
     UpdateNewName str ->
-      ({model | newGroupName = str}, Effects.none)
+      ({model | newGroupName = str}, Cmd.none)
 
     Add name ->
       let newGroup = (model.nextID, fst <| BudgetGroup.init name model.baseAmount model.currentAmount)
@@ -58,12 +58,12 @@ update action model =
                      , error = ""
                      }
       in
-        (newModel, Effects.none)
+        (newModel, Cmd.none)
 
     Remove id ->
       let newGroups = List.filter (\(groupId, _) -> groupId /= id) model.groups
       in
-        ({model | groups = newGroups }, Effects.none)
+        ({model | groups = newGroups }, Cmd.none)
 
     UpdateGroup id groupAction ->
       let updateGroup (groupId, group) =
@@ -72,18 +72,37 @@ update action model =
             else
               (groupId, group)
           --TODO: after the update, go through each group and calc total then set the next groups current value based on prev current value - the previous groups total
+          -- newModel =
+      --       { model | groups = List.map updateGroup model.groups }
+
+      --     recalculate ( groupId, group ) ( groups, remainingAmount ) =
+      --       case groupAction of
+      --         BudgetGroup.UpdateAccount _ _ ->
+      --           let
+      --             newGroup =
+      --               fst <| BudgetGroup.update (BudgetGroup.Recalculate newModel.baseAmount newModel.currentAmount) group
+      --           in
+      --             ( groups ++ [ ( groupId, newGroup ) ], remainingAmount - newGroup.amount )
+
+      --         _ ->
+      --           ( newModel.groups, newModel.remainingAmount )
+
+      --     ( groups, remainingAmount ) =
+      --       List.foldl recalculate ( [], model.currentAmount ) newModel.groups
+      -- in
+      --   ( { newModel | remainingAmount = remainingAmount, groups = groups }, Cmd.none )
       in
-        ({model | groups = List.map updateGroup model.groups}, Effects.none)
+        ({model | groups = List.map updateGroup model.groups}, Cmd.none)
 
     UpdateNewBaseAmount baseAmount ->
-      ({model | newBaseAmount = baseAmount}, Effects.none)
+      ({model | newBaseAmount = baseAmount}, Cmd.none)
 
     SetBaseAmount baseAmountStr ->
       case toInt baseAmountStr of
         Ok baseAmount ->
-          ({model | baseAmount = baseAmount, currentAmount = baseAmount, error = ""}, Effects.none)
+          ({model | baseAmount = baseAmount, currentAmount = baseAmount, error = ""}, Cmd.none)
         _ ->
-          ({model | error = "Couldn't update base amount"}, Effects.none)
+          ({model | error = "Couldn't update base amount"}, Cmd.none)
 
 view : Address Action -> Model -> Html
 view address model =

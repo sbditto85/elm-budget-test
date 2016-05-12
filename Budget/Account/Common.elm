@@ -1,4 +1,4 @@
-module Budget.Account.Common (accountTypeToString, stringToAccountType, calculate, canEdit) where
+module Budget.Account.Common exposing (accountTypeToString, stringToAccountType, calculate, canEdit)
 
 import Budget.Account.Types exposing (..)
 import Budget.Account.PercentBase as PercentBase

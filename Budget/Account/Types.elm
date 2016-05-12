@@ -1,4 +1,4 @@
-module Budget.Account.Types (Model, AccountType(PercentBase, Fixed, Percentage), Mode(Edit, NoEdit)) where
+module Budget.Account.Types exposing (Model, AccountType(PercentBase, Fixed, Percentage), Mode(Edit, NoEdit))
 
 
 type AccountType

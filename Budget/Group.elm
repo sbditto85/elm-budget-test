@@ -1,13 +1,14 @@
-module Budget.Group (view, init, update, Model, Action) where
+module Budget.Group exposing (view, init, update, Model, Msg(..))
 
 import Budget.Account as BudgetAccount
 import Budget.Account.Common as BudgetCommon
 import Budget.Account.Types exposing (..)
 import Html exposing (div, span, text, button, Html, input, select, option)
-import Html.Events exposing (on, targetValue, onClick)
+import Html.Events exposing (on, onInput, onClick)
 import Html.Attributes exposing (class, id, placeholder, value)
-import Signal exposing (message, Address, forwardTo)
-import Effects exposing (Effects, task)
+import Json.Decode exposing (succeed)
+-- import Signal exposing (message, Address, forwardTo)
+-- import Cmd exposing (Cmd, task)
 import String exposing (toInt)
 
 
@@ -32,7 +33,7 @@ type alias Model =
   }
 
 
-init : String -> Int -> Int -> ( Model, Effects Action )
+init : String -> Int -> Int -> ( Model, Cmd Msg )
 init name baseAmount currentAmount =
   ( { name = name
     , accounts = []
@@ -51,40 +52,43 @@ init name baseAmount currentAmount =
         currentAmount
         -- TODO: be the amount left to budget
     }
-  , Effects.none
+  , Cmd.none
   )
 
 
-type Action
-  = UpdateAccount ID BudgetAccount.Action
+type Msg
+  = UpdateAccount ID BudgetAccount.Msg
   | UpdateNewName String
   | UpdateNewFactor String
   | UpdateNewAccountType String
   | UpdateCurrentAmount Int
   | Add String String String
   | Remove ID
+  | Recalculate Int Int
 
 
-update : Action -> Model -> ( Model, Effects Action )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update action model =
   case action of
+    Recalculate baseAmount currentAmount ->
+      ( model, Cmd.none )
     UpdateNewName name ->
-      ( { model | newAccountName = name }, Effects.none )
+      ( { model | newAccountName = name }, Cmd.none )
 
     UpdateCurrentAmount amount ->
-      ( { model | currentAmount = amount }, Effects.none )
+      ( { model | currentAmount = amount }, Cmd.none )
 
     UpdateNewFactor amount ->
-      ( { model | newAccountFactor = amount }, Effects.none )
+      ( { model | newAccountFactor = amount }, Cmd.none )
 
     UpdateNewAccountType accountType ->
-      ( { model | newAccountType = accountType }, Effects.none )
+      ( { model | newAccountType = accountType }, Cmd.none )
 
-    UpdateAccount id budgetAction ->
+    UpdateAccount id budgetMsg ->
       let
         updateAccount ( accountId, account ) =
           if accountId == id then
-            ( accountId, fst <| BudgetAccount.update budgetAction account )
+            ( accountId, fst <| BudgetAccount.update budgetMsg account )
           else
             ( accountId, account )
 
@@ -92,7 +96,7 @@ update action model =
           { model | accounts = List.map updateAccount model.accounts }
 
         recalculate ( accountId, account ) ( accounts, remainingAmount ) =
-          case budgetAction of
+          case budgetMsg of
             BudgetAccount.Update _ _ ->
               let
                 newAccount =
@@ -106,7 +110,7 @@ update action model =
         ( accounts, remainingAmount ) =
           List.foldl recalculate ( [], model.currentAmount ) newModel.accounts
       in
-        ( { newModel | remainingAmount = remainingAmount, accounts = accounts }, Effects.none )
+        ( { newModel | remainingAmount = remainingAmount, accounts = accounts }, Cmd.none )
 
     Add name amount accountType ->
       let
@@ -141,7 +145,7 @@ update action model =
               ( { newModel
                   | remainingAmount = newRemainingAmount
                 }
-              , Effects.none
+              , Cmd.none
               )
 
           -- task <| succeed (UpdateCurrentAmount 300))
@@ -149,7 +153,7 @@ update action model =
             ( { model
                 | error = "Error, could not add account"
               }
-            , Effects.none
+            , Cmd.none
             )
 
     Remove id ->
@@ -157,14 +161,14 @@ update action model =
         newAccounts =
           List.filter (\( accountId, _ ) -> accountId /= id) model.accounts
       in
-        ( { model | accounts = newAccounts }, Effects.none )
+        ( { model | accounts = newAccounts }, Cmd.none )
 
 
-view : Address Action -> Model -> Html
-view address model =
+view : Model -> Html Msg
+view model =
   let
     accounts =
-      List.map (viewAccount address) model.accounts
+      List.map viewAccount model.accounts
 
     errors =
       if model.error /= "" then
@@ -179,19 +183,19 @@ view address model =
           ([ text model.name
            , text " "
            , input
-              [ on "input" targetValue (\name -> message address (UpdateNewName name))
+              [ onInput UpdateNewName
               , placeholder "Account Name"
               , value model.newAccountName
               ]
               []
            , input
-              [ on "input" targetValue (\amount -> message address (UpdateNewFactor amount))
+              [ onInput UpdateNewFactor
               , placeholder "Account Factor"
               , value model.newAccountFactor
               ]
               []
            , select
-              [ on "change" targetValue (\accountType -> message address (UpdateNewAccountType accountType))
+              [ on "change" (succeed UpdateNewAccountType)
               , value model.newAccountType
               ]
               [ option [ value "" ] [ text "Select Account Type" ]
@@ -199,7 +203,7 @@ view address model =
               , option [ value (BudgetCommon.accountTypeToString Fixed) ] [ text (BudgetCommon.accountTypeToString Fixed) ]
               , option [ value (BudgetCommon.accountTypeToString Percentage) ] [ text (BudgetCommon.accountTypeToString Percentage) ]
               ]
-           , button [ onClick address (Add model.newAccountName model.newAccountFactor model.newAccountType) ] [ text "Add Account" ]
+           , button [ onClick (Add model.newAccountName model.newAccountFactor model.newAccountType) ] [ text "Add Account" ]
            ]
             ++ errors
           )
@@ -221,6 +225,6 @@ accountsTotal model =
   List.sum (List.map (\( id, account ) -> account.amount) model.accounts)
 
 
-viewAccount : Address Action -> ( ID, BudgetAccount.Model ) -> Html
-viewAccount address ( id, model ) =
-  BudgetAccount.view (forwardTo address (UpdateAccount id)) model
+viewAccount : ( ID, BudgetAccount.Model ) -> Html Msg
+viewAccount ( id, model ) =
+  BudgetAccount.view  model

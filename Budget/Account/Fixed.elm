@@ -1,4 +1,4 @@
-module Budget.Account.Fixed (calculate, canEdit) where
+module Budget.Account.Fixed exposing (calculate, canEdit)
 
 import Budget.Account.Types exposing (Model, AccountType, Mode)
 

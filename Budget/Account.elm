@@ -1,10 +1,10 @@
-module Budget.Account (view, init, update, Model, Action(..)) where
+module Budget.Account exposing (view, init, update, Model, Msg(..))
 
 import Html exposing (div, span, text, button, Html, input)
-import Html.Events exposing (on, targetValue, onClick)
+import Html.Events exposing (onInput, onClick)
 import Html.Attributes exposing (class, id, placeholder, value)
-import Signal exposing (message, Address, forwardTo)
-import Effects exposing (Effects)
+-- import Signal exposing (message, Address, forwardTo)
+-- import Cmd exposing (Cmd)
 import String exposing (toInt)
 import Budget.Account.Common as Common
 import Budget.Account.Types exposing (..)
@@ -16,7 +16,7 @@ import Budget.Account.Percentage as AccountPercentage
 --import Task exposing (..)
 
 
-type Action
+type Msg
   = Recalculate Int Int
   | Update String String
   | UpdateNewName String
@@ -28,7 +28,7 @@ type alias Model =
   Budget.Account.Types.Model
 
 
-init : String -> Int -> Int -> Int -> Int -> AccountType -> ( Model, Effects Action )
+init : String -> Int -> Int -> Int -> Int -> AccountType -> ( Model, Cmd Msg )
 init name amount baseAmount currentAmount factor accountType =
   let
     m =
@@ -47,10 +47,10 @@ init name amount baseAmount currentAmount factor accountType =
     calcAmount =
       Common.calculate m
   in
-    ( { m | amount = calcAmount, newFactor = (toString factor) }, Effects.none )
+    ( { m | amount = calcAmount, newFactor = (toString factor) }, Cmd.none )
 
 
-update : Action -> Model -> ( Model, Effects Action )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update action model =
   case action of
     Recalculate baseAmount currentAmount ->
@@ -61,7 +61,7 @@ update action model =
         amount =
           Common.calculate newModel
       in
-        ( { newModel | amount = amount }, Effects.none )
+        ( { newModel | amount = amount }, Cmd.none )
 
     Update name factor ->
       case toInt factor of
@@ -79,27 +79,27 @@ update action model =
                 , factor = factor
                 , error = ""
               }
-            , Effects.none
+            , Cmd.none
             )
 
         Err _ ->
-          ( { model | error = "Couldn't get a number for the amount." }, Effects.none )
+          ( { model | error = "Couldn't get a number for the amount." }, Cmd.none )
 
     UpdateNewName newName ->
-      ( { model | newName = newName }, Effects.none )
+      ( { model | newName = newName }, Cmd.none )
 
     UpdateNewFactor newFactor ->
-      ( { model | newFactor = newFactor }, Effects.none )
+      ( { model | newFactor = newFactor }, Cmd.none )
 
     EditMode ->
       if canEdit model then
-        ( { model | mode = Edit }, Effects.none )
+        ( { model | mode = Edit }, Cmd.none )
       else
-        ( model, Effects.none )
+        ( model, Cmd.none )
 
 
-view : Address Action -> Model -> Html
-view address model =
+view : Model -> Html Msg
+view model =
   let
     error =
       if model.error /= "" then
@@ -112,7 +112,7 @@ view address model =
 
     editButton =
       if editable then
-        [ button [ onClick address (EditMode) ] [ text "Edit" ] ]
+        [ button [ onClick EditMode ] [ text "Edit" ] ]
       else
         []
 
@@ -121,16 +121,16 @@ view address model =
         [ input
             [ value model.newName
             , placeholder "Account Name"
-            , on "input" targetValue (\name -> message address (UpdateNewName name))
+            , onInput UpdateNewName
             ]
             []
         , input
             [ value model.newFactor
             , placeholder "Account Factor"
-            , on "input" targetValue (\factor -> message address (UpdateNewFactor factor))
+            , onInput UpdateNewFactor
             ]
             []
-        , button [ onClick address (Update model.newName model.newFactor) ] [ text "Update" ]
+        , button [ onClick (Update model.newName model.newFactor) ] [ text "Update" ]
         ]
           ++ error
       else

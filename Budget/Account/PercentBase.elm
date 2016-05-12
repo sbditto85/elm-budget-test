@@ -1,4 +1,4 @@
-module Budget.Account.PercentBase (calculate, canEdit) where
+module Budget.Account.PercentBase exposing (calculate, canEdit)
 
 import Budget.Account.Types exposing (Model, AccountType, Mode)
 
