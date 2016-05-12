@@ -4,9 +4,10 @@ import Budget.Account as BudgetAccount
 import Budget.Account.Common as BudgetCommon
 import Budget.Account.Types exposing (..)
 import Html exposing (div, span, text, button, Html, input, select, option)
-import Html.Events exposing (on, onInput, onClick)
+import Html.App
+import Html.Events exposing (on, targetValue, onInput, onClick)
 import Html.Attributes exposing (class, id, placeholder, value)
-import Json.Decode exposing (succeed)
+import Json.Decode as Json
 -- import Signal exposing (message, Address, forwardTo)
 -- import Cmd exposing (Cmd, task)
 import String exposing (toInt)
@@ -195,8 +196,8 @@ view model =
               ]
               []
            , select
-              [ on "change" (succeed UpdateNewAccountType)
-              , value model.newAccountType
+              [ on "change" (Json.map UpdateNewAccountType targetValue)
+              ,  value model.newAccountType
               ]
               [ option [ value "" ] [ text "Select Account Type" ]
               , option [ value (BudgetCommon.accountTypeToString PercentBase) ] [ text (BudgetCommon.accountTypeToString PercentBase) ]
@@ -227,4 +228,4 @@ accountsTotal model =
 
 viewAccount : ( ID, BudgetAccount.Model ) -> Html Msg
 viewAccount ( id, model ) =
-  BudgetAccount.view  model
+  Html.App.map (UpdateAccount id) (BudgetAccount.view model)

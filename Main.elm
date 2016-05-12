@@ -1,7 +1,7 @@
 module Main exposing (..)
 
 import Html.App as Html
-import Budget exposing (view, init, update, Action, Model)
+import Budget exposing (view, init, update, Msg, Model)
 import Html
 import Task
 -- import Effects exposing (Effects, Never)
