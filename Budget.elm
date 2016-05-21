@@ -35,8 +35,8 @@ init =
   ({ newGroupName = ""
    , newBaseAmount = "0"
    , groups = []
-   , baseAmount = 0
-   , currentAmount = 0
+   , baseAmount = 0 -- The total that never changes until updated
+   , currentAmount = 0 -- The total that is remaining after running through the groups
    , error = ""
    , nextID = 0
    }
@@ -73,27 +73,27 @@ update action model =
             else
               (groupId, group)
           --TODO: after the update, go through each group and calc total then set the next groups current value based on prev current value - the previous groups total
-          -- newModel =
-      --       { model | groups = List.map updateGroup model.groups }
+          newModel =
+            { model | groups = List.map updateGroup model.groups }
 
-      --     recalculate ( groupId, group ) ( groups, remainingAmount ) =
-      --       case groupMsg of
-      --         BudgetGroup.UpdateAccount _ _ ->
-      --           let
-      --             newGroup =
-      --               fst <| BudgetGroup.update (BudgetGroup.Recalculate newModel.baseAmount newModel.currentAmount) group
-      --           in
-      --             ( groups ++ [ ( groupId, newGroup ) ], remainingAmount - newGroup.amount )
+          recalculate ( groupId, group ) ( groups, remainingAmount ) =
+            case groupMsg of
+              BudgetGroup.UpdateAccount _ _ ->
+                let
+                  newGroup =
+                    fst <| BudgetGroup.update (BudgetGroup.Recalculate newModel.baseAmount remainingAmount) group
+                in
+                  ( groups ++ [ ( groupId, newGroup ) ], remainingAmount - newGroup.currentAmount )
 
-      --         _ ->
-      --           ( newModel.groups, newModel.remainingAmount )
+              _ ->
+                ( groups ++ [ ( groupId, group ) ], remainingAmount )
 
-      --     ( groups, remainingAmount ) =
-      --       List.foldl recalculate ( [], model.currentAmount ) newModel.groups
-      -- in
-      --   ( { newModel | remainingAmount = remainingAmount, groups = groups }, Cmd.none )
+          ( groups, remainingAmount ) =
+            List.foldl recalculate ( [], model.currentAmount ) newModel.groups
       in
-        ({model | groups = List.map updateGroup model.groups}, Cmd.none)
+        ( { newModel | currentAmount = remainingAmount, groups = groups }, Cmd.none )
+      -- in
+      --   ({model | groups = List.map updateGroup model.groups}, Cmd.none)
 
     UpdateNewBaseAmount baseAmount ->
       ({model | newBaseAmount = baseAmount}, Cmd.none)
@@ -134,7 +134,13 @@ view model =
                [ text "Add Group"
                ]
       ]
-      ++ groups)
+      ++ groups
+      ++ [div []
+            [ span [] [text (toString model.baseAmount)]
+            , span [] [text " => "]
+            , span [] [text (toString model.currentAmount)]
+            ]
+         ])
 
 viewGroup : (ID, BudgetGroup.Model) -> Html Msg
 viewGroup (id, model) =

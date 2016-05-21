@@ -72,7 +72,20 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update action model =
   case action of
     Recalculate baseAmount currentAmount ->
-      ( model, Cmd.none )
+      let
+        recalculate ( accountId, account ) ( accounts, remainingAmount ) =
+          let
+            newAccount =
+              fst <| BudgetAccount.update (BudgetAccount.Recalculate baseAmount currentAmount) account
+          in
+            ( accounts ++ [ ( accountId, newAccount ) ], remainingAmount - newAccount.amount )
+              
+              
+        ( accounts, remainingAmount ) =
+          List.foldl recalculate ( [], currentAmount ) model.accounts
+      in
+        ( { model | baseAmount = baseAmount, currentAmount = currentAmount, remainingAmount = remainingAmount, accounts = accounts }, Cmd.none )
+        
     UpdateNewName name ->
       ( { model | newAccountName = name }, Cmd.none )
 
@@ -106,7 +119,7 @@ update action model =
                 ( accounts ++ [ ( accountId, newAccount ) ], remainingAmount - newAccount.amount )
 
             _ ->
-              ( newModel.accounts, newModel.remainingAmount )
+              ( accounts ++ [ ( accountId, account ) ], remainingAmount )
 
         ( accounts, remainingAmount ) =
           List.foldl recalculate ( [], model.currentAmount ) newModel.accounts
@@ -216,6 +229,10 @@ view model =
               , text (toString (accountsTotal model))
               , span [] [ text " Remaining: " ]
               , text (toString (model.remainingAmount))
+              , span [] [ text " Base Amount: " ]
+              , text (toString (model.baseAmount))
+              , span [] [ text " Currrent Amount: " ]
+              , text (toString (model.currentAmount))
               ]
            ]
       )
