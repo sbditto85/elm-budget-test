@@ -97,7 +97,19 @@ update action model =
     SetBaseAmount baseAmountStr ->
       case toInt baseAmountStr of
         Ok baseAmount ->
-          ({model | baseAmount = baseAmount, currentAmount = baseAmount, error = ""}, Cmd.none)
+          let
+            recalculate ( groupId, group ) ( groups, remainingAmount ) =
+              let
+                newGroup =
+                  fst <| BudgetGroup.update (BudgetGroup.Recalculate baseAmount remainingAmount) group
+              in
+                ( groups ++ [ ( groupId, newGroup ) ], remainingAmount - (newGroup.currentAmount - newGroup.remainingAmount) )
+                  
+                  
+            ( groups, remainingAmount ) =
+              List.foldl recalculate ( [], baseAmount ) model.groups
+          in
+            ({model | baseAmount = baseAmount, currentAmount = remainingAmount, groups = groups, error = ""}, Cmd.none)
         _ ->
           ({model | error = "Couldn't update base amount"}, Cmd.none)
 

@@ -245,4 +245,4 @@ accountsTotal model =
 
 viewAccount : ( ID, BudgetAccount.Model ) -> Html Msg
 viewAccount ( id, model ) =
-  Html.App.map (UpdateAccount id) (BudgetAccount.view model)
+  Html.App.map (UpdateAccount id) (div [] ([BudgetAccount.view model]++[text "Delete"]))
