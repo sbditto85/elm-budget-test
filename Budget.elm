@@ -15,8 +15,8 @@ type alias Model =
   { newGroupName : String
   , newBaseAmount : String
   , groups : List (ID, BudgetGroup.Model)
-  , baseAmount : Int
-  , currentAmount : Int
+  , baseAmount : Int -- Doesn't change represents the original amount
+  , currentAmount : Int -- Whatever is left over
   , error : String
   , nextID : ID
   }
@@ -77,19 +77,15 @@ update action model =
             { model | groups = List.map updateGroup model.groups }
 
           recalculate ( groupId, group ) ( groups, remainingAmount ) =
-            case groupMsg of
-              BudgetGroup.UpdateAccount _ _ ->
-                let
-                  newGroup =
-                    fst <| BudgetGroup.update (BudgetGroup.Recalculate newModel.baseAmount remainingAmount) group
-                in
-                  ( groups ++ [ ( groupId, newGroup ) ], remainingAmount - newGroup.currentAmount )
-
-              _ ->
-                ( groups ++ [ ( groupId, group ) ], remainingAmount )
-
+            let
+              newGroup =
+                fst <| BudgetGroup.update (BudgetGroup.Recalculate newModel.baseAmount remainingAmount) group
+            in
+              ( groups ++ [ ( groupId, newGroup ) ], remainingAmount - (newGroup.currentAmount - newGroup.remainingAmount) )
+                
+                
           ( groups, remainingAmount ) =
-            List.foldl recalculate ( [], model.currentAmount ) newModel.groups
+            List.foldl recalculate ( [], model.baseAmount ) newModel.groups
       in
         ( { newModel | currentAmount = remainingAmount, groups = groups }, Cmd.none )
       -- in
@@ -136,9 +132,10 @@ view model =
       ]
       ++ groups
       ++ [div []
-            [ span [] [text (toString model.baseAmount)]
-            , span [] [text " => "]
-            , span [] [text (toString model.currentAmount)]
+            [ span [] [ text " Base Amount: " ]
+            , text (toString (model.baseAmount))
+            , span [] [ text " Current Amount: " ]
+            , text (toString (model.currentAmount))
             ]
          ])
 
